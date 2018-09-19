@@ -1,0 +1,32 @@
+;
+; VmLoader.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=
+ClassGuid={bf798677-a0a7-4dcb-9d9a-76d706e009d6}
+Provider=hzqst
+DriverVer=123
+CatalogFile=VmLoader.cat
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$
+
+[Standard.NT$ARCH$]
+
+
+[Strings]
+ManufacturerName=""
+ClassName=""
+DiskName="VmLoader Source Disk"
