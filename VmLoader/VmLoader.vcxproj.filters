@@ -17,9 +17,6 @@
       <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
       <Extensions>inf;inv;inx;mof;mc;</Extensions>
     </Filter>
-    <Filter Include="Source Files\unicorn">
-      <UniqueIdentifier>{19be0bfb-37c6-48df-b708-52cf08f18aa8}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Inf Include="VmLoader.inf">
@@ -28,6 +25,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cs_driver_mm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
