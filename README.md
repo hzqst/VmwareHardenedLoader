@@ -3,6 +3,7 @@ Vmware Hardened VM detection mitigation loader
 
 Add following settings into .vmx
 
+```
 hypervisor.cpuid.v0 = "FALSE"
 board-id.reflectHost = "TRUE"
 hw.model.reflectHost = "TRUE"
@@ -21,3 +22,4 @@ monitor_control.disable_btinout = "TRUE"
 monitor_control.disable_btmemspace = "TRUE"
 monitor_control.disable_btpriv = "TRUE"
 monitor_control.disable_btseg = "TRUE"
+```
