@@ -2,6 +2,19 @@
 
 extern "C"
 {
+	PVOID ACPI_DriverObject = NULL;
+
+	typedef NTSTATUS(__cdecl *PFNFTH)(PSYSTEM_FIRMWARE_TABLE_INFORMATION);
+
+	typedef struct _SYSTEM_FIRMWARE_TABLE_HANDLER {
+		ULONG       ProviderSignature;
+		BOOLEAN     Register;
+		PFNFTH      FirmwareTableHandler;
+		PVOID       DriverObject;
+	} SYSTEM_FIRMWARE_TABLE_HANDLER, *PSYSTEM_FIRMWARE_TABLE_HANDLER;
+
+	NTKERNELAPI PVOID NTAPI RtlPcToFileHeader(_In_ PVOID PcValue, _Out_ PVOID *BaseOfImage);
+
 	_Use_decl_annotations_ void *UtilGetSystemProcAddress(
 		const wchar_t *proc_name) {
 		PAGED_CODE();
@@ -19,16 +32,16 @@ extern "C"
 
 	}
 
+
+
 	_Use_decl_annotations_ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object,
 		PUNICODE_STRING registry_path) {
 		UNREFERENCED_PARAMETER(registry_path);
 		PAGED_CODE();
 
-		auto pfnNtQuerySystemInformation = UtilGetSystemProcAddress(L"NtQuerySystemInformation");
-
-		DbgPrint("NtQuerySystemInformation found at %p", pfnNtQuerySystemInformation);
-
-
+		//use following code to locate ExpFirmwareTableResource & ExpFirmwareTableProviderListHead
+		//PAGE
+		//41 B8 41 52 46 54                                   mov     r8d, 'TFRA'     ; Tag
 
 		driver_object->DriverUnload = DriverUnload;
 
