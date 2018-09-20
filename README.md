@@ -36,6 +36,7 @@ monitor_control.disable_btinout = "TRUE"
 monitor_control.disable_btmemspace = "TRUE"
 monitor_control.disable_btpriv = "TRUE"
 monitor_control.disable_btseg = "TRUE"
+monitor_control.restrict_backdoor = "TRUE"
 ```
 
 ## 2nd Step: Modify MAC address
