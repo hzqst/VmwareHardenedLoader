@@ -1,6 +1,8 @@
 # VmwareHardenedLoader
 Vmware Hardened VM detection mitigation loader
 
+For now, only Windows (vista~win10) x64 guests are supported.
+
 ## First Step: Add following settings into .vmx
 
 ```
