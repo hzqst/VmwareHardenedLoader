@@ -96,6 +96,6 @@ https://github.com/aquynh/capstone is used to disasm ntoskrnl code.
 ## Todo
 Some registry keys are supposed to be hidden, like
 ![reg](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/5.png)
-For now you have to delete those key to bypass some shitty malware's anti-vm check.
+For now you have to delete those keys to bypass some shitty malwares' anti-vm check.
 
-vmware's SCSI virtual disk is also a detection vector.
+vmware SCSI virtual disk is also a detection vector, which could be hidden by installing a minifilter to take control of IRP_InternalIoctl that passed to disk device drivers.
