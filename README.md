@@ -80,3 +80,8 @@ to unload the driver.
 ![before](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/1.png)
 ![sigs](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/2.png)
 ![after](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/3.png)
+
+## License
+This software is released under the MIT License, see LICENSE.
+Some util procedures are from https://github.com/tandasat/HyperPlatform
+https://github.com/aquynh/capstone is used to disasm ntoskrnl code.
