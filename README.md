@@ -38,9 +38,9 @@ monitor_control.disable_btpriv = "TRUE"
 monitor_control.disable_btseg = "TRUE"
 ```
 
-## 2nd Step: modify MAC address
+## 2nd Step: Modify MAC address
 
-Modify the MAC address to whatever except below:
+Modify guest's MAC address to whatever except below:
 ```
 	TCHAR *szMac[][2] = {
 		{ _T("\x00\x05\x69"), _T("00:05:69") }, // VMWare, Inc.
@@ -51,6 +51,8 @@ Modify the MAC address to whatever except below:
 ```
 
 ![mac](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/4.png)
+
+I use 
 
 ## 3rd Step: Load vmloader.sys in vm guest
 open command prompt as System Administrator, use the following commands
