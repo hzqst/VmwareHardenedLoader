@@ -28,7 +28,7 @@ monitor_control.disable_btseg = "TRUE"
 open command prompt as System Administrator, use the following commands
 
 ```
-sc create vmloader binPath= "\??\c:\vmloader.sys type= kernel"
+sc create vmloader binPath= "\??\c:\vmloader.sys" type= "kernel"
 sc start vmloader
 ```
 
