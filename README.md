@@ -92,3 +92,10 @@ This software is released under the MIT License, see LICENSE.
 Some util procedures are from https://github.com/tandasat/HyperPlatform
 
 https://github.com/aquynh/capstone is used to disasm ntoskrnl code.
+
+## Todo
+Some registry keys are supposed to be hidden, like
+![reg](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/5.png)
+For now you have to delete those key to bypass some shitty malware's anti-vm check.
+
+vmware's SCSI virtual disk is also a detection vector.
