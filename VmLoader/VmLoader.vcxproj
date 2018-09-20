@@ -143,6 +143,9 @@
       <AdditionalLibraryDirectories>../capstone\msvc\x64\Release</AdditionalLibraryDirectories>
       <AdditionalDependencies>capstone_static_winkernel.lib;ntstrsafe.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy $(OutDir)$(TargetName)$(TargetExt) "..\bin\vmloader.sys"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <Inf Include="VmLoader.inf" />
