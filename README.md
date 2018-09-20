@@ -58,13 +58,15 @@ Modify guest's MAC address to whatever except below:
 open command prompt as System Administrator, use the following commands
 
 ```
-sc create vmloader binPath= "\??\c:\vmloader.sys" type= "kernel"
+sc create vmloader binPath= "\??\c:\vmloader.sys" type= "kernel" start="system"
 sc start vmloader
 ```
 
-If an error occurs when start service, use DbgView to see whats happened. you can post an issue with DbgView output information if it does't work on your environment.
+`start="system"` is optional. if you want the driver to be loaded automatically when system start, add this.
 
-If no error, then everything works fine.
+If an error occurs when start service, use DbgView to capture kernel debug output. you can post an issue with DbgView output information and   with your ntoskrnl.exe attached.
+
+If no error occurs, then everything works fine.
 
 you could put "vmloader.sys" wherever you want, except vmware shared folders.
 
@@ -75,7 +77,9 @@ sc delete vmloader
 ```
 to unload the driver.
 
-## Vmware guest win8.1 x64 with VMProtect 3.2 packed program (anti-vm option enabled)
+## Showcase
+
+Vmware guest win8.1 x64 with VMProtect 3.2 packed program (anti-vm option enabled)
 
 ![before](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/1.png)
 ![sigs](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/2.png)
