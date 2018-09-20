@@ -5,6 +5,10 @@ For now, only Windows (vista~win10) x64 guests are supported.
 
 It get vmware guest undetected by VMProtect 3.2 (anti-vm feature).
 
+## What it does
+
+the VmLoader driver patches SystemFirmwareTable at runtime, it removes all detectable signatures like "VMware" "Virtual" "VMWARE".
+
 ## Warning
 
 Do not install vmtools, it will ruin everything!
