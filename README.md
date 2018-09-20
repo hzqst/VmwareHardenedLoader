@@ -3,7 +3,13 @@ Vmware Hardened VM detection mitigation loader
 
 For now, only Windows (vista~win10) x64 guests are supported.
 
-It get vmware guest undetected by VMProtect 3.2.
+It get vmware guest undetected by VMProtect 3.2 (anti-vm feature).
+
+## Warning
+
+Do not install vmtools, it will ruin everything!
+
+use TeamViewer / AnyDesk / mstsc / VNC viewer instead!
 
 ## First Step: Add following settings into .vmx
 
