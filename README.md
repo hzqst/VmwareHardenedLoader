@@ -38,6 +38,10 @@ monitor_control.disable_btpriv = "TRUE"
 monitor_control.disable_btseg = "TRUE"
 ```
 
+## Second Step: regenerate MAC address for guest
+
+![mac](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/4.png)
+
 ## Second Step: Load vmloader.sys in vm guest
 open command prompt as System Administrator, use the following commands
 
