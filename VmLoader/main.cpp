@@ -1,5 +1,7 @@
 #include <fltkernel.h>
 #include "cs_driver_mm.h"
+#include "kernel_stl.h"
+#include <set>
 
 extern "C"
 {
@@ -500,9 +502,9 @@ extern "C"
 
 #define ULONG_TO_ULONG64(addr) ((ULONG64)addr & 0xFFFFFFFFull)
 #define PVOID_TO_ULONG64(addr) (sizeof(addr) == 4 ? ULONG_TO_ULONG64(addr) : (ULONG64)addr)
-	typedef BOOLEAN(*DisasmCallback)(cs_insn *inst, PUCHAR pAddress, size_t instLen, int instCount, PVOID context);
+	typedef BOOLEAN(*DisasmCallbackWalk)(cs_insn *inst, PUCHAR pAddress, size_t instLen, int instCount, PVOID context, int depth);
 
-	BOOLEAN DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, PVOID context)
+	BOOLEAN DisasmRangesWalk(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallbackWalk callback, PVOID context, int depth)
 	{
 		BOOLEAN success = FALSE;
 
@@ -545,7 +547,7 @@ extern "C"
 							break;
 						}
 
-						if (callback(&insts[0], pAddress, instLen, instCount, context))
+						if (callback(&insts[0], pAddress, instLen, instCount, context, depth))
 						{
 							success = TRUE;
 							break;
@@ -564,6 +566,7 @@ extern "C"
 				cs_close(&handle);
 			}
 
+
 			KeRestoreFloatingPointState(&float_save);
 		}
 
@@ -572,15 +575,35 @@ extern "C"
 
 	typedef struct
 	{
+		PVOID base;
+		size_t max_insts;
+		int max_depth;
+		std::set<PVOID> code;
+		std::set<PVOID> branches;
+
 		PVOID lea_rcx_imm;
-		int lea_rcx_inst;
+		PUCHAR lea_rcx_addr;
 		PVOID pfn_ExAcquireResourceSharedLite;
 		int call_ExAcquireResourceSharedLite_inst;
 	}LocateExpFirmwareTableContext;
 
-	BOOLEAN LocateExpFirmwareTable(cs_insn *inst, PUCHAR pAddress, size_t instLen, int instCount, PVOID context)
+	BOOLEAN LocateExpFirmwareTable(cs_insn *inst, PUCHAR pAddress, size_t instLen, int instCount, PVOID context, int depth)
 	{
-		auto ctx = (LocateExpFirmwareTableContext *)context;
+		LocateExpFirmwareTableContext *ctx = (LocateExpFirmwareTableContext *)context;
+
+		if (ctx->code.size() > ctx->max_insts)
+		{
+			return TRUE;
+		}
+
+		if (ctx->code.find(pAddress) != ctx->code.end())
+		{
+			return TRUE;
+		}
+		else
+		{
+			ctx->code.emplace(pAddress);
+		}
 
 		//48 8D 0D C8 AE E6 FF                                lea     rcx, ExpFirmwareTableResource ; Resource
 		if (inst->id == X86_INS_LEA && inst->detail->x86.op_count == 2
@@ -588,7 +611,7 @@ extern "C"
 			&& inst->detail->x86.operands[0].reg == X86_REG_RCX && (x86_reg)inst->detail->x86.operands[1].mem.base == X86_REG_RIP)
 		{
 			ctx->lea_rcx_imm = (PVOID)(pAddress + instLen + (int)inst->detail->x86.operands[1].mem.disp);
-			ctx->lea_rcx_inst = instCount;
+			ctx->lea_rcx_addr = pAddress;
 		}
 		//48 8B 05 A9 AE E6 FF                                mov     rax, cs:ExpFirmwareTableProviderListHead
 		//48 83 C0 E8                                         add     rax, 0FFFFFFFFFFFFFFE8h
@@ -605,15 +628,45 @@ extern "C"
 		}
 		if (instLen == 5 && pAddress[0] == 0xE8)
 		{
-			if (ctx->lea_rcx_inst != -1 && instCount - ctx->lea_rcx_inst < 5)
+			if (ctx->lea_rcx_addr && (int)(pAddress - ctx->lea_rcx_addr) < 20 && (int)(ctx->lea_rcx_addr - pAddress) < 20)
 			{
-				PVOID CallTarget = (PVOID)(pAddress + 5 + *(int *)(pAddress + 1));;
+				PVOID CallTarget = (PVOID)(pAddress + 5 + *(int *)(pAddress + 1));
 				if (CallTarget == ctx->pfn_ExAcquireResourceSharedLite)
 				{
 					g_ExpFirmwareTableResource = ctx->lea_rcx_imm;
 					ctx->call_ExAcquireResourceSharedLite_inst = instCount;
 				}
 			}
+		}
+
+		if ((inst->id == X86_INS_JMP || (inst->id >= X86_INS_JAE && inst->id <= X86_INS_JS)) && inst->detail->x86.op_count == 1 && inst->detail->x86.operands[0].type == X86_OP_IMM)
+		{
+			PVOID imm = (PVOID)inst->detail->x86.operands[0].imm;
+			if (imm >= g_NtosBase && imm < g_NtosEnd)
+			{
+				auto foundbranch = ctx->branches.find(imm);
+				if (foundbranch == ctx->branches.end())
+				{
+					ctx->branches.emplace(imm);
+					if (depth + 1 < ctx->max_depth)
+						DisasmRangesWalk(imm, 0x300, LocateExpFirmwareTable, ctx, depth + 1);
+				}
+			}
+
+			if (inst->id == X86_INS_JMP)
+			{
+				return TRUE;
+			}
+		}
+
+		if (inst->id == X86_INS_RET)
+		{
+			return TRUE;
+		}
+
+		if (instLen == 1 && (inst->bytes[0] == 0xCC || inst->bytes[0] == 0x90))
+		{
+			return TRUE;
 		}
 
 		return FALSE;
@@ -636,6 +689,9 @@ extern "C"
 				auto find = UtilMemMem(search_begin, search_size, "VMWARE", sizeof("VMWARE") - 1);
 				if (!find)
 					break;
+
+				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "removing VMWARE at %p for ACPI\n", find);
+
 				memset(find, '6', sizeof("VMWARE") - 1);
 				search_begin = (PUCHAR)find + sizeof("VMWARE") - 1;
 				search_size = SystemFirmwareTableInfo->TableBuffer + SystemFirmwareTableInfo->TableBufferLength - search_begin;
@@ -662,6 +718,9 @@ extern "C"
 				auto find = UtilMemMem(search_begin, search_size, "VMware", sizeof("VMware") - 1);
 				if (!find)
 					break;
+
+				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "removing VMware at %p for RSMB\n", find);
+
 				memset(find, '6', sizeof("VMware") - 1);
 				search_begin = (PUCHAR)find + sizeof("VMware") - 1;
 				search_size = SystemFirmwareTableInfo->TableBuffer + SystemFirmwareTableInfo->TableBufferLength - search_begin;
@@ -685,12 +744,12 @@ extern "C"
 			(PLIST_ENTRY)g_ExpFirmwareTableProviderListHead,
 			HandlerListCurrent) {
 
-			if (g_OriginalACPIHandler && HandlerListCurrent->SystemFWHandler.FirmwareTableHandler == g_OriginalACPIHandler) {
+			if (g_OriginalACPIHandler && HandlerListCurrent->SystemFWHandler.ProviderSignature == 'ACPI') {
 				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "ACPI found, node restored!\n");
 				HandlerListCurrent->SystemFWHandler.FirmwareTableHandler = g_OriginalACPIHandler;
 			}
 
-			if (g_OriginalRSMBHandler && HandlerListCurrent->SystemFWHandler.FirmwareTableHandler == g_OriginalRSMBHandler) {
+			if (g_OriginalRSMBHandler && HandlerListCurrent->SystemFWHandler.ProviderSignature == 'RSMB') {
 				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "RSMB found, node restored!\n");
 				HandlerListCurrent->SystemFWHandler.FirmwareTableHandler = g_OriginalRSMBHandler;
 			}
@@ -754,12 +813,15 @@ extern "C"
 		}
 
 		LocateExpFirmwareTableContext ctx;
-		ctx.lea_rcx_inst = -1;
+		ctx.max_depth = 16;
+		ctx.max_insts = 1000;
+		ctx.base = (PUCHAR)FindMovTag + sizeof("\x41\xB8\x41\x52\x46\x54") - 1;
+		ctx.lea_rcx_addr = NULL;
 		ctx.lea_rcx_imm = NULL;
 		ctx.pfn_ExAcquireResourceSharedLite = UtilGetSystemProcAddress(L"ExAcquireResourceSharedLite");
 		ctx.call_ExAcquireResourceSharedLite_inst = -1;
 
-		DisasmRanges((PUCHAR)FindMovTag + sizeof("\x41\xB8\x41\x52\x46\x54") - 1, 0x300, LocateExpFirmwareTable, &ctx);
+		DisasmRangesWalk((PUCHAR)FindMovTag + sizeof("\x41\xB8\x41\x52\x46\x54") - 1, 0x300, LocateExpFirmwareTable, &ctx, 0);
 
 		if (!g_ExpFirmwareTableResource) {
 			DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "ExpFirmwareTableResource not found!\n");

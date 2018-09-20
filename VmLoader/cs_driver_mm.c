@@ -1,5 +1,5 @@
 #include "cs_driver_mm.h"
-#include <ntddk.h>
+#include <fltkernel.h>
 
 // A pool tag for memory allocation
 static const ULONG CS_DRIVER_POOL_TAG = 'rdsC';
