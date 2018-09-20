@@ -3,6 +3,8 @@ Vmware Hardened VM detection mitigation loader
 
 For now, only Windows (vista~win10) x64 guests are supported.
 
+It get vmware guest undetected by VMProtect 3.2.
+
 ## First Step: Add following settings into .vmx
 
 ```
@@ -42,3 +44,5 @@ sc stop vmloader
 sc delete vmloader
 ```
 to unload the driver.
+
+## Vmware guest win8.1 x64 with VMProtect 3.2 packed program (anti-vm option enabled)
