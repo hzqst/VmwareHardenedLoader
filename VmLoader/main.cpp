@@ -3,11 +3,20 @@
 
 extern "C"
 {
-	PVOID ACPI_DriverObject = NULL;
 	PVOID g_NtosBase = NULL;
 	PVOID g_NtosEnd = NULL;
 	PVOID g_ExpFirmwareTableResource = NULL;
 	PVOID g_ExpFirmwareTableProviderListHead = NULL;
+
+#define EX_FIELD_ADDRESS(Type, Base, Member) ((PUCHAR)Base + FIELD_OFFSET(Type, Member))
+#define EX_FOR_EACH_IN_LIST(_Type, _Link, _Head, _Current)                                             \
+    for((_Current) = CONTAINING_RECORD((_Head)->Flink, _Type, _Link);                                   \
+       (_Head) != (PLIST_ENTRY)EX_FIELD_ADDRESS(_Type, _Current, _Link);                               \
+       (_Current) = CONTAINING_RECORD(((PLIST_ENTRY)EX_FIELD_ADDRESS(_Type, _Current, _Link))->Flink,  \
+                                     _Type,                                                          \
+                                     _Link)                                                          \
+       )
+
 	typedef NTSTATUS(__cdecl *PFNFTH)(PSYSTEM_FIRMWARE_TABLE_INFORMATION);
 	
 	typedef struct _SYSTEM_FIRMWARE_TABLE_HANDLER_NODE {
@@ -474,14 +483,6 @@ extern "C"
 		return MmGetSystemRoutineAddress(&proc_name_U);
 	}
 
-	_Use_decl_annotations_ static void DriverUnload(
-		PDRIVER_OBJECT driver_object) {
-		UNREFERENCED_PARAMETER(driver_object);
-		PAGED_CODE();
-
-
-	}
-
 	_Use_decl_annotations_ void *UtilMemMem(const void *search_base,
 		SIZE_T search_size, const void *pattern,
 		SIZE_T pattern_size) {
@@ -584,7 +585,7 @@ extern "C"
 		//48 8D 0D C8 AE E6 FF                                lea     rcx, ExpFirmwareTableResource ; Resource
 		if (inst->id == X86_INS_LEA && inst->detail->x86.op_count == 2
 			&& inst->detail->x86.operands[0].type == X86_OP_REG && inst->detail->x86.operands[1].type == X86_OP_MEM
-			&& inst->detail->x86.operands[0].reg == X86_REG_RDX && (x86_reg)inst->detail->x86.operands[1].mem.base == X86_REG_RIP)
+			&& inst->detail->x86.operands[0].reg == X86_REG_RCX && (x86_reg)inst->detail->x86.operands[1].mem.base == X86_REG_RIP)
 		{
 			ctx->lea_rcx_imm = (PVOID)(pAddress + instLen + (int)inst->detail->x86.operands[1].mem.disp);
 			ctx->lea_rcx_inst = instCount;
@@ -670,6 +671,35 @@ extern "C"
 		return st;
 	}
 
+	_Use_decl_annotations_ static void DriverUnload(
+		PDRIVER_OBJECT driver_object) {
+		UNREFERENCED_PARAMETER(driver_object);
+		PAGED_CODE();
+
+		ExAcquireResourceExclusiveLite((PERESOURCE)g_ExpFirmwareTableResource, TRUE);
+
+		PSYSTEM_FIRMWARE_TABLE_HANDLER_NODE HandlerListCurrent = NULL;
+
+		EX_FOR_EACH_IN_LIST(SYSTEM_FIRMWARE_TABLE_HANDLER_NODE,
+			FirmwareTableProviderList,
+			(PLIST_ENTRY)g_ExpFirmwareTableProviderListHead,
+			HandlerListCurrent) {
+
+			if (g_OriginalACPIHandler && HandlerListCurrent->SystemFWHandler.FirmwareTableHandler == g_OriginalACPIHandler) {
+				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "ACPI found, node restored!\n");
+				HandlerListCurrent->SystemFWHandler.FirmwareTableHandler = g_OriginalACPIHandler;
+			}
+
+			if (g_OriginalRSMBHandler && HandlerListCurrent->SystemFWHandler.FirmwareTableHandler == g_OriginalRSMBHandler) {
+				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "RSMB found, node restored!\n");
+				HandlerListCurrent->SystemFWHandler.FirmwareTableHandler = g_OriginalRSMBHandler;
+			}
+
+		}
+
+		ExReleaseResourceLite((PERESOURCE)g_ExpFirmwareTableResource);
+	}
+
 	_Use_decl_annotations_ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object,
 		PUNICODE_STRING registry_path) {
 		UNREFERENCED_PARAMETER(registry_path);
@@ -682,7 +712,7 @@ extern "C"
 		EnumSystemModules(GetKernelInfo, checkPtr);
 
 		if (!g_NtosBase) {
-			DbgPrint("ntos base not found!");
+			DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "ntos base not found!\n");
 			return STATUS_UNSUCCESSFUL;
 		}
 
@@ -690,6 +720,11 @@ extern "C"
 		//PAGE
 		//41 B8 41 52 46 54                                   mov     r8d, 'TFRA'     ; Tag
 		auto NtHeader = RtlImageNtHeader(g_NtosBase);
+
+		if (!NtHeader) {
+			DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "ntos ntheader not found!\n");
+			return STATUS_UNSUCCESSFUL;
+		}
 
 		PIMAGE_SECTION_HEADER secheader = (PIMAGE_SECTION_HEADER)((PUCHAR)NtHeader + FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) + NtHeader->FileHeader.SizeOfOptionalHeader);
 
@@ -702,18 +737,19 @@ extern "C"
 			{
 				PAGEBase = (PUCHAR)g_NtosBase + secheader[i].VirtualAddress;
 				PAGESize = max(secheader[i].SizeOfRawData, secheader[i].Misc.VirtualSize);
+				break;
 			}
 		}
 
 		if (!PAGEBase) {
-			DbgPrint("PAGE section not found!");
+			DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "PAGE section not found!\n");
 			return STATUS_UNSUCCESSFUL;
 		}
-
+		
 		auto FindMovTag = UtilMemMem(PAGEBase, PAGESize, "\x41\xB8\x41\x52\x46\x54", sizeof("\x41\xB8\x41\x52\x46\x54") - 1);
 
 		if (!FindMovTag) {
-			DbgPrint("mov r8d, 'TFRA' sig not found!");
+			DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "mov r8d, 'TFRA' sig not found!\n");
 			return STATUS_UNSUCCESSFUL;
 		}
 
@@ -723,26 +759,18 @@ extern "C"
 		ctx.pfn_ExAcquireResourceSharedLite = UtilGetSystemProcAddress(L"ExAcquireResourceSharedLite");
 		ctx.call_ExAcquireResourceSharedLite_inst = -1;
 
-		DisasmRanges((PUCHAR)FindMovTag + sizeof("\x41\xB8\x41\x52\x46\x54") - 1, 0x100, LocateExpFirmwareTable, &ctx);
+		DisasmRanges((PUCHAR)FindMovTag + sizeof("\x41\xB8\x41\x52\x46\x54") - 1, 0x300, LocateExpFirmwareTable, &ctx);
 
 		if (!g_ExpFirmwareTableResource) {
-			DbgPrint("ExpFirmwareTableResource not found!");
+			DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "ExpFirmwareTableResource not found!\n");
 			return STATUS_UNSUCCESSFUL;
 		}
 
 		if (!g_ExpFirmwareTableProviderListHead) {
-			DbgPrint("ExpFirmwareTableProviderListHead not found!");
+			DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "ExpFirmwareTableProviderListHead not found!\n");
 			return STATUS_UNSUCCESSFUL;
 		}
 
-#define EX_FIELD_ADDRESS(Type, Base, Member) ((PUCHAR)Base + FIELD_OFFSET(Type, Member))
-#define EX_FOR_EACH_IN_LIST(_Type, _Link, _Head, _Current)                                             \
-    for((_Current) = CONTAINING_RECORD((_Head)->Flink, _Type, _Link);                                   \
-       (_Head) != (PLIST_ENTRY)EX_FIELD_ADDRESS(_Type, _Current, _Link);                               \
-       (_Current) = CONTAINING_RECORD(((PLIST_ENTRY)EX_FIELD_ADDRESS(_Type, _Current, _Link))->Flink,  \
-                                     _Type,                                                          \
-                                     _Link)                                                          \
-       )
 		ExAcquireResourceExclusiveLite((PERESOURCE)g_ExpFirmwareTableResource, TRUE);
 
 		PSYSTEM_FIRMWARE_TABLE_HANDLER_NODE HandlerListCurrent = NULL;
@@ -753,24 +781,22 @@ extern "C"
 			HandlerListCurrent) {
 
 			if (!g_OriginalACPIHandler && HandlerListCurrent->SystemFWHandler.ProviderSignature == 'ACPI') {
-				DbgPrint("ACPI found, node manipulated!");
+				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "ACPI found, node manipulated!\n");
 				g_OriginalACPIHandler = HandlerListCurrent->SystemFWHandler.FirmwareTableHandler;
 				HandlerListCurrent->SystemFWHandler.FirmwareTableHandler = MyACPIHandler;
 			}
+
 			if (!g_OriginalRSMBHandler && HandlerListCurrent->SystemFWHandler.ProviderSignature == 'RSMB') {
-				DbgPrint("RSMB found, node manipulated!");
+				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "RSMB found, node manipulated!\n");
 				g_OriginalRSMBHandler = HandlerListCurrent->SystemFWHandler.FirmwareTableHandler;
 				HandlerListCurrent->SystemFWHandler.FirmwareTableHandler = MyRSMBHandler;
 			}
-
-			if (g_OriginalRSMBHandler && g_OriginalACPIHandler)
-				break;
 		}
 
 		ExReleaseResourceLite((PERESOURCE)g_ExpFirmwareTableResource);
 
 		driver_object->DriverUnload = DriverUnload;
-
+	
 		return STATUS_SUCCESS;
 	}
 }
