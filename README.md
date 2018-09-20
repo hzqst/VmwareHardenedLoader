@@ -52,7 +52,7 @@ Modify guest's MAC address to whatever except below:
 
 ![mac](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/4.png)
 
-I use 
+
 
 ## 3rd Step: Load vmloader.sys in vm guest
 open command prompt as System Administrator, use the following commands
