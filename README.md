@@ -15,7 +15,7 @@ Do not install vmtools, it will ruin everything!
 
 use TeamViewer / AnyDesk / mstsc / VNC viewer instead!
 
-## First Step: Add following settings into .vmx
+## 1st Step: Add following settings into .vmx
 
 ```
 hypervisor.cpuid.v0 = "FALSE"
@@ -38,7 +38,7 @@ monitor_control.disable_btpriv = "TRUE"
 monitor_control.disable_btseg = "TRUE"
 ```
 
-## Second Step: modify MAC address
+## 2nd Step: modify MAC address
 
 Modify the MAC address to whatever except below:
 ```
@@ -52,7 +52,7 @@ Modify the MAC address to whatever except below:
 
 ![mac](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/4.png)
 
-## Second Step: Load vmloader.sys in vm guest
+## 3rd Step: Load vmloader.sys in vm guest
 open command prompt as System Administrator, use the following commands
 
 ```
