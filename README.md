@@ -1,7 +1,7 @@
 # VmwareHardenedLoader
 Vmware Hardened VM detection mitigation loader
 
-Add following settings into .vmx
+## First Step: Add following settings into .vmx
 
 ```
 hypervisor.cpuid.v0 = "FALSE"
@@ -23,3 +23,20 @@ monitor_control.disable_btmemspace = "TRUE"
 monitor_control.disable_btpriv = "TRUE"
 monitor_control.disable_btseg = "TRUE"
 ```
+
+## Second Step: Load vmloader.sys in vm guest
+open command prompt as System Administrator, use the following commands
+
+```
+sc create vmloader binPath= "\??\c:\vmloader.sys type= kernel"
+sc start vmloader
+```
+
+c:\vmloader.sys could be whatever you want.
+
+when you no longer need the mitigation, use
+```
+sc stop vmloader
+sc delete vmloader
+```
+to unload the driver.
