@@ -46,7 +46,11 @@ sc create vmloader binPath= "\??\c:\vmloader.sys" type= "kernel"
 sc start vmloader
 ```
 
-c:\vmloader.sys could be whatever you want.
+If an error occurs when start service, use DbgView to see whats happened. you can post an issue with DbgView output information if it does't work on your environment.
+
+If no error, then everything works fine.
+
+you could put "vmloader.sys" wherever you want, except vmware shared folders.
 
 when you no longer need the mitigation, use
 ```
