@@ -3,7 +3,17 @@ Vmware Hardened VM detection mitigation loader
 
 For now, only Windows (vista~win10) x64 guests are supported.
 
-It get vmware guest undetected by VMProtect 3.2.
+It get vmware guest undetected by VMProtect 3.2 (anti-vm feature).
+
+## What it does
+
+the VmLoader driver patches SystemFirmwareTable at runtime, it removes all detectable signatures like "VMware" "Virtual" "VMWARE".
+
+## Warning
+
+Do not install vmtools, it will ruin everything!
+
+use TeamViewer / AnyDesk / mstsc / VNC viewer instead!
 
 ## First Step: Add following settings into .vmx
 
@@ -36,7 +46,11 @@ sc create vmloader binPath= "\??\c:\vmloader.sys" type= "kernel"
 sc start vmloader
 ```
 
-c:\vmloader.sys could be whatever you want.
+If an error occurs when start service, use DbgView to see whats happened. you can post an issue with DbgView output information if it does't work on your environment.
+
+If no error, then everything works fine.
+
+you could put "vmloader.sys" wherever you want, except vmware shared folders.
 
 when you no longer need the mitigation, use
 ```
@@ -46,3 +60,7 @@ sc delete vmloader
 to unload the driver.
 
 ## Vmware guest win8.1 x64 with VMProtect 3.2 packed program (anti-vm option enabled)
+
+![before](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/1.png)
+![sigs](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/2.png)
+![after](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/3.png)
