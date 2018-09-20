@@ -672,6 +672,39 @@ extern "C"
 		return FALSE;
 	}
 
+	VOID RemoveSigs(PVOID FirmwareBuffer, ULONG FirmwareBufferLength, const char *Sig, size_t SigLength)
+	{
+		PUCHAR search_begin = (PUCHAR)FirmwareBuffer;
+		SIZE_T search_size = FirmwareBufferLength;
+		while (1)
+		{
+			auto find = UtilMemMem(search_begin, search_size, Sig, SigLength);
+			if (!find)
+				break;
+
+			memset(find, '6', SigLength);
+			search_begin = (PUCHAR)find + SigLength;
+			search_size = (PUCHAR)FirmwareBuffer + FirmwareBufferLength - search_begin;
+		}
+	}
+
+	PFNFTH g_OriginalFIRMHandler = NULL;
+
+	NTSTATUS __cdecl MyFIRMHandler(
+		_Inout_ PSYSTEM_FIRMWARE_TABLE_INFORMATION SystemFirmwareTableInfo
+	)
+	{
+		auto st = g_OriginalFIRMHandler(SystemFirmwareTableInfo);
+
+		if (st == STATUS_SUCCESS && SystemFirmwareTableInfo->Action == 1)
+		{
+			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMware", sizeof("VMware") - 1);
+			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "Virtual", sizeof("Virtual") - 1);
+		}
+
+		return st;
+	}
+
 	PFNFTH g_OriginalACPIHandler = NULL;
 
 	NTSTATUS __cdecl MyACPIHandler(
@@ -680,22 +713,10 @@ extern "C"
 	{
 		auto st = g_OriginalACPIHandler(SystemFirmwareTableInfo);
 
-		if (st == STATUS_SUCCESS)
+		if (st == STATUS_SUCCESS && SystemFirmwareTableInfo->Action == 1)
 		{
-			PUCHAR search_begin = SystemFirmwareTableInfo->TableBuffer;
-			SIZE_T search_size = SystemFirmwareTableInfo->TableBufferLength;
-			while (1)
-			{
-				auto find = UtilMemMem(search_begin, search_size, "VMWARE", sizeof("VMWARE") - 1);
-				if (!find)
-					break;
-
-				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "removing VMWARE at %p for ACPI\n", find);
-
-				memset(find, '6', sizeof("VMWARE") - 1);
-				search_begin = (PUCHAR)find + sizeof("VMWARE") - 1;
-				search_size = SystemFirmwareTableInfo->TableBuffer + SystemFirmwareTableInfo->TableBufferLength - search_begin;
-			}
+			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMware", sizeof("VMware") - 1);
+			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMWARE", sizeof("VMWARE") - 1);
 		}
 
 		return st;
@@ -709,22 +730,10 @@ extern "C"
 	{
 		auto st = g_OriginalRSMBHandler(SystemFirmwareTableInfo);
 
-		if (st == STATUS_SUCCESS)
+		if (st == STATUS_SUCCESS && SystemFirmwareTableInfo->Action == 1)
 		{
-			PUCHAR search_begin = SystemFirmwareTableInfo->TableBuffer;
-			SIZE_T search_size = SystemFirmwareTableInfo->TableBufferLength;
-			while (1)
-			{
-				auto find = UtilMemMem(search_begin, search_size, "VMware", sizeof("VMware") - 1);
-				if (!find)
-					break;
-
-				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "removing VMware at %p for RSMB\n", find);
-
-				memset(find, '6', sizeof("VMware") - 1);
-				search_begin = (PUCHAR)find + sizeof("VMware") - 1;
-				search_size = SystemFirmwareTableInfo->TableBuffer + SystemFirmwareTableInfo->TableBufferLength - search_begin;
-			}
+			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMware", sizeof("VMware") - 1);
+			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMWARE", sizeof("VMWARE") - 1);
 		}
 
 		return st;
@@ -754,6 +763,10 @@ extern "C"
 				HandlerListCurrent->SystemFWHandler.FirmwareTableHandler = g_OriginalRSMBHandler;
 			}
 
+			if (g_OriginalFIRMHandler && HandlerListCurrent->SystemFWHandler.ProviderSignature == 'FIRM') {
+				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "FIRM found, node restored!\n");
+				HandlerListCurrent->SystemFWHandler.FirmwareTableHandler = g_OriginalFIRMHandler;
+			}
 		}
 
 		ExReleaseResourceLite((PERESOURCE)g_ExpFirmwareTableResource);
@@ -852,6 +865,12 @@ extern "C"
 				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "RSMB found, node manipulated!\n");
 				g_OriginalRSMBHandler = HandlerListCurrent->SystemFWHandler.FirmwareTableHandler;
 				HandlerListCurrent->SystemFWHandler.FirmwareTableHandler = MyRSMBHandler;
+			}	
+			
+			if (!g_OriginalFIRMHandler && HandlerListCurrent->SystemFWHandler.ProviderSignature == 'FIRM') {
+				DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "FIRM found, node manipulated!\n");
+				g_OriginalFIRMHandler = HandlerListCurrent->SystemFWHandler.FirmwareTableHandler;
+				HandlerListCurrent->SystemFWHandler.FirmwareTableHandler = MyFIRMHandler;
 			}
 		}
 
