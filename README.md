@@ -46,3 +46,7 @@ sc delete vmloader
 to unload the driver.
 
 ## Vmware guest win8.1 x64 with VMProtect 3.2 packed program (anti-vm option enabled)
+
+![before](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/1.png)
+![sigs](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/2.png)
+![after](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/3.png)
