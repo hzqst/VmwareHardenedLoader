@@ -100,3 +100,5 @@ Some registry keys are supposed to be hidden, like
 For now you have to delete those keys to bypass some shitty malwares' anti-vm check.
 
 vmware SCSI virtual disk is also a detection vector, which could be hidden by installing a minifilter to take control of IRP_InternalIoctl that passed to disk device drivers.
+
+vmware virtual graphic card information could be detected by querying DXGI interface.
