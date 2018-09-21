@@ -1,6 +1,6 @@
 [submodule "capstone"]
 	path = capstone
-	url = https://github.com/aquynh/capstone
+	url = https://github.com/hzqst/capstone
 [submodule "hidden"]
 	path = hidden
-	url = https://github.com/JKornev/hidden
+	url = https://github.com/hzqst/hidden
