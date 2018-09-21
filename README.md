@@ -3,7 +3,7 @@ Vmware Hardened VM detection mitigation loader
 
 For now, only Windows (vista~win10) x64 guests are supported.
 
-It get vmware guest undetected by VMProtect 3.2 (anti-vm feature).
+It get vmware guest undetected by VMProtect 3.2, Safengine and Themida (anti-vm feature).
 
 ## What it does
 
@@ -68,16 +68,18 @@ Modify guest's MAC address to whatever except below:
 ![mac](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/4.png)
 
 
-
 ## 3rd Step: Load vmloader.sys in vm guest
-open command prompt as System Administrator, use the following commands
+
+put vmloader.sys at C:\
+
+open command prompt with Administrator Priviledge, use the following commands
 
 ```
 sc create vmloader binPath= "\??\c:\vmloader.sys" type= "kernel" start="system"
 sc start vmloader
 ```
 
-`start="system"` is optional. if you want the driver to be loaded automatically when system start, add this.
+`start="system"` is optional. if you want the driver to be loaded automatically when system start, add this to the command.
 
 If an error occurs when start service, use DbgView to capture kernel debug output. you can post an issue with DbgView output information and   with your ntoskrnl.exe attached.
 
@@ -91,6 +93,32 @@ sc stop vmloader
 sc delete vmloader
 ```
 to unload the driver.
+
+## 4th Step: Load hidden.sys in vm guest and run HiddenTests (optional)
+
+### Only necessary when registry keys are detected.
+
+put hidden.sys at C:\
+
+open command prompt with Administrator Priviledge, use the following commands
+
+```
+sc create hidden binPath= "\??\c:\hidden.sys" type= "kernel" start="system"
+sc start hidden
+```
+
+`start="system"` is optional. if you want the driver to be loaded automatically when system start, add this to the command.
+
+when you no longer need the mitigation, use
+```
+sc stop hidden
+sc delete hidden
+```
+to unload the driver.
+
+Then run HiddenTests.exe with Administrator Priviledge (which could be placed wherever you want).
+
+When you see "successful!!", it means it's all ok.
 
 ## Showcase
 
@@ -108,11 +136,11 @@ Some util procedures are from https://github.com/tandasat/HyperPlatform
 https://github.com/aquynh/capstone is used to disasm ntoskrnl code.
 
 ## TODO
-Some registry keys are supposed to be hidden, like
+~~Some registry keys are supposed to be hidden, like~~ NOW MITIGATED
 ![reg](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/5.png)
 
-For now you have to delete those keys to bypass some shitty malwares' anti-vm check.
+~~For now you have to delete those keys to bypass some shitty malwares' anti-vm check.~~
 
-~~vmware SCSI virtual disk is also a detection vector, which could be hidden by installing a minifilter to take control of IRP_InternalIoctl that passed to disk device drivers.~~
+~~vmware SCSI virtual disk is also a detection vector, which could be hidden by installing a minifilter to take control of IRP_InternalIoctl that passed to disk device drivers.~~ NOW MITIGATED
 
 vmware virtual graphic card information could be detected by querying DXGI interface, which could be modified by editing graphic driver files.
