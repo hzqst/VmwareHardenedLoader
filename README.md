@@ -3,7 +3,7 @@ Vmware Hardened VM detection mitigation loader
 
 For now, only Windows (vista~win10) x64 guests are supported.
 
-It get vmware guest undetected by VMProtect 3.2 (anti-vm feature).
+It get vmware guest undetected by VMProtect 3.2, Safengine and Themida (anti-vm feature).
 
 ## What it does
 
