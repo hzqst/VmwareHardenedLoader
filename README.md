@@ -23,6 +23,7 @@ board-id.reflectHost = "TRUE"
 hw.model.reflectHost = "TRUE"
 serialNumber.reflectHost = "TRUE"
 smbios.reflectHost = "TRUE"
+SMBIOS.noOEMStrings = "TRUE"
 isolation.tools.getPtrLocation.disable = "TRUE"
 isolation.tools.setPtrLocation.disable = "TRUE"
 isolation.tools.setVersion.disable = "TRUE"
@@ -37,6 +38,19 @@ monitor_control.disable_btmemspace = "TRUE"
 monitor_control.disable_btpriv = "TRUE"
 monitor_control.disable_btseg = "TRUE"
 monitor_control.restrict_backdoor = "TRUE"
+```
+
+If you have a SCSI virtual disk at scsi0 slot (first slot) as your system drive, remember add
+
+```
+scsi0:0.productID = "Whatever you want"
+scsi0:0.vendorID = "Whatever you want"
+```
+
+I use
+```
+scsi0:0.productID = "Tencent SSD"
+scsi0:0.vendorID = "Tencent"
 ```
 
 ## 2nd Step: Modify MAC address
@@ -93,9 +107,12 @@ Some util procedures are from https://github.com/tandasat/HyperPlatform
 
 https://github.com/aquynh/capstone is used to disasm ntoskrnl code.
 
-## Todo
+## TODO
 Some registry keys are supposed to be hidden, like
 ![reg](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/5.png)
-For now you have to delete those key to bypass some shitty malware's anti-vm check.
 
-vmware's SCSI virtual disk is also a detection vector.
+For now you have to delete those keys to bypass some shitty malwares' anti-vm check.
+
+~~vmware SCSI virtual disk is also a detection vector, which could be hidden by installing a minifilter to take control of IRP_InternalIoctl that passed to disk device drivers.~~
+
+vmware virtual graphic card information could be detected by querying DXGI interface, which could be modified by editing graphic driver files.
