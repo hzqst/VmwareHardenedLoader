@@ -718,7 +718,7 @@ extern "C"
 			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMware", sizeof("VMware") - 1);
 			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMWARE", sizeof("VMWARE") - 1);
 		}
-
+		
 		return st;
 	}
 
