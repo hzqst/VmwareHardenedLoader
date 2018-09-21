@@ -1,3 +1,6 @@
 [submodule "hidden"]
 	path = hidden
 	url = https://github.com/hzqst/hidden
+[submodule "capstone"]
+	path = capstone
+	url = https://github.com/hzqst/capstone
