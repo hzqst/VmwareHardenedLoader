@@ -1,6 +1,7 @@
 [submodule "hidden"]
 	path = hidden
 	url = https://github.com/hzqst/hidden
-[submodule "capstone"]
-	path = capstone
+[submodule "capstone2"]
+	path = capstone2
 	url = https://github.com/hzqst/capstone
+	branch = master
