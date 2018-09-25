@@ -67,6 +67,18 @@ Modify guest's MAC address to whatever except below:
 
 ![mac](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/4.png)
 
+You could add
+
+```
+ethernet0.address = "Some random mac address"
+```
+into vmx file instead of modifing MAC address in vmware GUI
+
+I use
+
+```
+ethernet0.address = "00:11:56:20:D2:E8"
+```
 
 ## 3rd Step: Load vmloader.sys in vm guest
 
