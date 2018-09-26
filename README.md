@@ -72,7 +72,7 @@ You could add
 ```
 ethernet0.address = "Some random mac address"
 ```
-into vmx file instead of modifing MAC address in vmware GUI
+into vmx file instead of modifying MAC address in vmware GUI
 
 I use
 
