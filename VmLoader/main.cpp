@@ -664,7 +664,7 @@ extern "C"
 			return TRUE;
 		}
 
-		if (instLen == 1 && (inst->bytes[0] == 0xCC || inst->bytes[0] == 0x90))
+		if (instLen == 1 && inst->bytes[0] == 0xCC)
 		{
 			return TRUE;
 		}
