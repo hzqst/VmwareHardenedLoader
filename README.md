@@ -9,6 +9,30 @@ It get vmware guest undetected by VMProtect 3.2, Safengine and Themida (anti-vm 
 
 the VmLoader driver patches SystemFirmwareTable at runtime, it removes all detectable signatures like "VMware" "Virtual" "VMWARE".
 
+## Build
+
+Visual Studio 2015 / 2017 and [Windows Driver Kit 10](https://docs.microsoft.com/zh-cn/windows-hardware/drivers/download-the-wdk) are required.
+
+Open VmLoader.sln with Visual Studio 2015 / 2017
+
+Build capstone_static_winkernel as x64/Release
+
+Build VmLoader as x64/Release
+
+Remember to sign bin/vmloader.sys if you want to load it in Driver-Signature-Enforcement enabled environment.
+
+### Hidden stuffs are only necessary when registry keys are detected.
+
+Build Hidden as x64/Release
+
+Build HiddenLib as x64/Release
+
+Build HiddenTests as x64/Release
+
+Remember to sign bin/hidden.sys if you want to load it in Driver-Signature-Enforcement enabled environment.
+
+#Installation
+
 ## Warning
 
 Do not install vmtools, it will ruin everything!
