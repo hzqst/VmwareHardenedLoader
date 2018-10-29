@@ -31,7 +31,7 @@ Build HiddenTests as x64/Release
 
 Remember to sign bin/hidden.sys if you want to load it in Driver-Signature-Enforcement enabled environment.
 
-#Installation
+# Installation
 
 ## Warning
 
