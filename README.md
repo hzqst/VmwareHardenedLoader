@@ -15,21 +15,9 @@ Visual Studio 2015 / 2017 and [Windows Driver Kit 10](https://docs.microsoft.com
 
 Open VmLoader.sln with Visual Studio 2015 / 2017
 
-Build capstone_static_winkernel as x64/Release
+Build VmLoader as x64/Release. (No x86 support for now)
 
-Build VmLoader as x64/Release
-
-Remember to sign bin/vmloader.sys if you want to load it in Driver-Signature-Enforcement enabled environment.
-
-### Hidden stuffs are only necessary when registry keys are detected.
-
-Build Hidden as x64/Release
-
-Build HiddenLib as x64/Release
-
-Build HiddenTests as x64/Release
-
-Remember to sign bin/hidden.sys if you want to load it in Driver-Signature-Enforcement enabled environment.
+Remember to test-sign "bin/vmloader.sys" if you want to load it in test-sign mode.
 
 # Installation
 
@@ -104,57 +92,11 @@ I use
 ethernet0.address = "00:11:56:20:D2:E8"
 ```
 
-## 3rd Step: Load vmloader.sys in vm guest
+## 3rd Step: Run install.bat in vm guest as Administrator Priviledge
 
-put vmloader.sys at C:\
-
-open command prompt with Administrator Priviledge, use the following commands
-
-```
-sc create vmloader binPath= "\??\c:\vmloader.sys" type= "kernel" start="system"
-sc start vmloader
-```
-
-`start="system"` is optional. if you want the driver to be loaded automatically when system start, add this to the command.
-
-If an error occurs when start service, use DbgView to capture kernel debug output. you can post an issue with DbgView output information and   with your ntoskrnl.exe attached.
+If an error occurs when start service, use DbgView to capture kernel debug output. you can post an issue with DbgView output information and with your ntoskrnl.exe attached.
 
 If no error occurs, then everything works fine.
-
-you could put "vmloader.sys" wherever you want, except vmware shared folders.
-
-when you no longer need the mitigation, use
-```
-sc stop vmloader
-sc delete vmloader
-```
-to unload the driver.
-
-## 4th Step: Load hidden.sys in vm guest and run HiddenTests (optional)
-
-### Only necessary when registry keys are detected.
-
-put hidden.sys at C:\
-
-open command prompt with Administrator Priviledge, use the following commands
-
-```
-sc create hidden binPath= "\??\c:\hidden.sys" type= "kernel" start="system"
-sc start hidden
-```
-
-`start="system"` is optional. if you want the driver to be loaded automatically when system start, add this to the command.
-
-when you no longer need the mitigation, use
-```
-sc stop hidden
-sc delete hidden
-```
-to unload the driver.
-
-Then run HiddenTests.exe with Administrator Priviledge (which could be placed wherever you want).
-
-When you see "successful!!", it means it's all ok.
 
 ## Showcase
 
@@ -172,11 +114,5 @@ Some util procedures are from https://github.com/tandasat/HyperPlatform
 https://github.com/aquynh/capstone is used to disasm ntoskrnl code.
 
 ## TODO
-~~Some registry keys are supposed to be hidden, like~~ NOW MITIGATED
-![reg](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/5.png)
-
-~~For now you have to delete those keys to bypass some shitty malwares' anti-vm check.~~
-
-~~vmware SCSI virtual disk is also a detection vector, which could be hidden by installing a minifilter to take control of IRP_InternalIoctl that passed to disk device drivers.~~ NOW MITIGATED
 
 vmware virtual graphic card information could be detected by querying DXGI interface, which could be modified by editing graphic driver files.
