@@ -1,13 +1,13 @@
-# VmwareHardenedLoader
-Vmware Hardened VM detection mitigation loader
+# VMwareHardenedLoader
+VMware Hardened VM detection mitigation loader
 
 For now, only Windows (vista~win10) x64 guests are supported.
 
-It get vmware guest undetected by VMProtect 3.2, Safengine and Themida (anti-vm feature).
+It get VMware guest undetected by VMProtect 3.2, Safengine and Themida (anti-vm feature).
 
 ## What it does
 
-the VmLoader driver patches SystemFirmwareTable at runtime, it removes all detectable signatures like "VMware" "Virtual" "VMWARE".
+The VmLoader driver patches SystemFirmwareTable at runtime, it removes all detectable signatures like "VMware" "Virtual" "VMWARE".
 
 ## Build
 
@@ -25,7 +25,7 @@ Remember to test-sign "bin/vmloader.sys" if you want to load it in test-sign mod
 
 Do not install vmtools, it will ruin everything!
 
-use TeamViewer / AnyDesk / mstsc / VNC viewer instead!
+Use TeamViewer / AnyDesk / mstsc / VNC viewer instead!
 
 ## 1st Step: Add following settings into .vmx
 
@@ -52,7 +52,7 @@ monitor_control.disable_btseg = "TRUE"
 monitor_control.restrict_backdoor = "TRUE"
 ```
 
-If you have a SCSI virtual disk at scsi0 slot (first slot) as your system drive, remember add
+If you have a SCSI virtual disk at scsi0 slot (first slot) as your system drive, remember to add
 
 ```
 scsi0:0.productID = "Whatever you want"
@@ -84,7 +84,7 @@ You could add
 ```
 ethernet0.address = "Some random mac address"
 ```
-into vmx file instead of modifying MAC address in vmware GUI
+Into vmx file instead of modifying MAC address in VMware GUI
 
 I use
 
@@ -100,7 +100,7 @@ If no error occurs, then everything works fine.
 
 ## Showcase
 
-Vmware guest win8.1 x64 with VMProtect 3.2 packed program (anti-vm option enabled)
+VMware guest win8.1 x64 with VMProtect 3.2 packed program (anti-vm option enabled)
 
 ![before](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/1.png)
 ![sigs](https://github.com/hzqst/VmwareHardenedLoader/raw/master/img/2.png)
@@ -115,4 +115,4 @@ https://github.com/aquynh/capstone is used to disasm ntoskrnl code.
 
 ## TODO
 
-vmware virtual graphic card information could be detected by querying DXGI interface, which could be modified by editing graphic driver files.
+VMware virtual graphic card information could be detected by querying DXGI interface, which could be modified by editing graphic driver files.
