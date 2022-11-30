@@ -51,3 +51,5 @@ title VMware Hardened Loader Uninstallation Script
 sc stop vmloader
 sc delete vmloader
 del /F /Q "C:\vmloader.sys"
+echo Press any key to restart...
+pause > nul
