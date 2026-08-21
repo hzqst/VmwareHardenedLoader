@@ -7,7 +7,7 @@ VMwareHardenedLoader-ng is a Windows kernel driver for VMware guest research env
 The driver resolves undocumented kernel globals from signed System Informer KPH dynamic data instead of PDBs, signature scanning, or registry-provided RVAs.
 
 ## Quick start
-
+s
 Read the [build guide](docs/en/build.md), then build from a Visual Studio 2022 Developer Command Prompt with the WDK installed:
 
 ~~~bat
