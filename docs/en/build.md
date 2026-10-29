@@ -28,7 +28,7 @@ Use /p:Platform=ARM64 with either configuration to cross-build the ARM64 driver.
 
 Before C/C++ compilation, the project automatically performs these steps:
 
-1. Downloads the latest manifest from https://github.com/HLND2T/kphtools/releases/latest/download/kphdyn.xml into a temporary file.
+1. Downloads the latest manifest from https://github.com/HLND2T/kphtools/releases/latest/download/kphdyn.xml, or from the URL in VMLOADER_KPHDYN_URL when that environment variable is set, into a temporary file.
 2. Parses the XML with DTD processing disabled and verifies that usable firmware records exist.
 3. Atomically replaces thirdparty/systeminformer/kphlib/kphdyn.xml only after validation succeeds.
 4. Builds System Informer's CustomBuildTool and generates the v20 embedded source plus ksidyn.bin.
@@ -36,6 +36,13 @@ Before C/C++ compilation, the project automatically performs these steps:
 6. Generates the driver public-key header under the intermediate build directory.
 
 The build intentionally does not use a cached manifest. A download, XML validation, generation, signing, or verification failure stops the build.
+
+The manifest override is validated as an absolute HTTPS URL before download; any other value stops the build. The Nightly workflow uses it to build against the kphtools nightly manifest:
+
+~~~bat
+set VMLOADER_KPHDYN_URL=https://github.com/HLND2T/kphtools/releases/download/nightly/kphdyn.xml
+msbuild VmLoader.sln /m /t:Rebuild /p:Configuration=Release /p:Platform=x64
+~~~
 
 The build requires HTTPS access to GitHub and may require NuGet access when restoring CustomBuildTool packages.
 

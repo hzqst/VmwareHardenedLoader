@@ -1,0 +1,126 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "47 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vmwarehardenedloader-nightly
+  cancel-in-progress: false
+
+env:
+  VMLOADER_KPHDYN_URL: https://github.com/HLND2T/kphtools/releases/download/nightly/kphdyn.xml
+
+jobs:
+  build:
+    name: ${{ matrix.platform }} ${{ matrix.configuration }}
+    if: >-
+      github.event_name == 'schedule' ||
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [x64, ARM64]
+        configuration: [Debug, Release]
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build driver
+        shell: cmd
+        run: >-
+          msbuild VmLoader.sln /m /t:Rebuild
+          /p:Configuration=${{ matrix.configuration }}
+          /p:Platform=${{ matrix.platform }}
+
+      - name: Verify published runtime files
+        shell: pwsh
+        run: |
+          $requiredFiles = @(
+            'bin\vmloader.sys',
+            'bin\dyndata.bin',
+            'bin\dyndata.sig'
+          )
+          $missingFiles = $requiredFiles | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Leaf) }
+          if ($missingFiles) {
+            throw "Missing published runtime files: $($missingFiles -join ', ')"
+          }
+
+      - name: Package bin directory
+        shell: pwsh
+        env:
+          BUILD_PLATFORM: ${{ matrix.platform }}
+          BUILD_CONFIGURATION: ${{ matrix.configuration }}
+        run: |
+          $platform = $env:BUILD_PLATFORM.ToLowerInvariant()
+          $configuration = $env:BUILD_CONFIGURATION.ToLowerInvariant()
+          $archiveName = "VmwareHardenedLoader-windows-$platform-$configuration.7z"
+          & 7z a $archiveName '.\bin\*' -r
+          if ($LASTEXITCODE -ne 0) {
+            throw "7-Zip failed with exit code $LASTEXITCODE."
+          }
+          if (-not (Test-Path -LiteralPath $archiveName -PathType Leaf)) {
+            throw "Expected archive was not created: $archiveName"
+          }
+
+      - name: Upload nightly archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: VmwareHardenedLoader-windows-${{ matrix.platform }}-${{ matrix.configuration }}
+          path: VmwareHardenedLoader-windows-*.7z
+          if-no-files-found: error
+
+  release:
+    name: Publish nightly release
+    needs: build
+    runs-on: windows-2022
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download nightly archives
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create or update nightly release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          target_commitish: ${{ github.sha }}
+          name: VmwareHardenedLoader-nightly
+          prerelease: true
+          draft: false
+          make_latest: "false"
+          files: release-assets/*.7z
+          fail_on_unmatched_files: true
+          body: |
+            Nightly VmwareHardenedLoader build generated from the kphtools nightly kphdyn.xml.
+            Source commit: ${{ github.sha }}
+            Build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Move nightly tag
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          git push origin "HEAD:refs/tags/nightly" --force
+          if ($LASTEXITCODE -ne 0) {
+            throw "Unable to update the nightly tag."
+          }

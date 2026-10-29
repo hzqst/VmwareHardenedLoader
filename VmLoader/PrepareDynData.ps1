@@ -92,7 +92,10 @@ function Test-HexUInt32 {
 function Update-KphManifest {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$ManifestPath
+        [string]$ManifestPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ManifestUrl
     )
 
     $manifestDirectory = Split-Path -Parent $ManifestPath
@@ -100,8 +103,10 @@ function Update-KphManifest {
     $backupPath = Join-Path $manifestDirectory ('.kphdyn.backup.' + [Guid]::NewGuid().ToString('N') + '.xml')
 
     try {
+        Write-Host "Downloading KPH XML from $ManifestUrl"
+
         Invoke-WebRequest `
-            -Uri 'https://github.com/HLND2T/kphtools/releases/latest/download/kphdyn.xml' `
+            -Uri $ManifestUrl `
             -OutFile $downloadPath `
             -Headers @{ 'Cache-Control' = 'no-cache, no-store'; 'Pragma' = 'no-cache' } `
             -UseBasicParsing
@@ -281,6 +286,7 @@ $intermediate = Get-FullPath $IntermediateDirectory $projectRoot
 $output = Get-FullPath $OutputDirectory $projectRoot
 $systemInformer = Join-Path $repository 'thirdparty\systeminformer'
 $manifest = Join-Path $systemInformer 'kphlib\kphdyn.xml'
+$manifestUrl = 'https://github.com/HLND2T/kphtools/releases/latest/download/kphdyn.xml'
 $customBuildProject = Join-Path $systemInformer 'tools\CustomBuildTool\CustomBuildTool.csproj'
 $signTool = Join-Path $systemInformer 'tools\CustomSignTool\bin\Release64\CustomSignTool.exe'
 $resources = Join-Path $systemInformer 'tools\CustomSignTool\Resources'
@@ -289,12 +295,27 @@ if (-not (Test-Path -LiteralPath $customBuildProject) -or -not (Test-Path -Liter
     throw 'The System Informer build or signing tool is missing.'
 }
 
+if (-not [string]::IsNullOrWhiteSpace($env:VMLOADER_KPHDYN_URL)) {
+    try {
+        $overrideUrl = New-Object System.Uri($env:VMLOADER_KPHDYN_URL, [System.UriKind]::Absolute)
+    }
+    catch {
+        $overrideUrl = $null
+    }
+
+    if (-not $overrideUrl -or $overrideUrl.Scheme -ne 'https') {
+        throw "VMLOADER_KPHDYN_URL must be an absolute HTTPS URL: $env:VMLOADER_KPHDYN_URL"
+    }
+
+    $manifestUrl = $overrideUrl.AbsoluteUri
+}
+
 New-Item -ItemType Directory -Path $intermediate -Force | Out-Null
 $toolOutput = Reset-SafeDirectory (Join-Path $intermediate 'CustomBuildTool') $intermediate
 $toolIntermediate = Reset-SafeDirectory (Join-Path $intermediate 'CustomBuildToolObj') $intermediate
 $staging = Reset-SafeDirectory (Join-Path $intermediate 'DynDataStaging') $intermediate
 
-Update-KphManifest $manifest
+Update-KphManifest $manifest $manifestUrl
 $keyPair = Ensure-SigningKeyPair $resources $signTool
 $privateKey = $keyPair[0]
 $publicKey = $keyPair[1]
