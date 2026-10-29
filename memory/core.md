@@ -15,6 +15,7 @@ permalink: VmwareHardenedLoader/core
   - `shared/symbol_config.h`: service Parameters value names; currently only DynDataDirectory.
   - `VmLoader/PrepareDynData.ps1`: downloads/validates KPH XML, builds CustomBuildTool, generates/signs/verifies v20 dynamic data, emits public-key header and bin artifacts.
   - `VmLoader/VmLoader.vcxproj`, `VmLoader.sln`: maintained build entrypoints.
+  - `.github/workflows/windows.yml`, `.github/workflows/nightly.yml`: pull-request/tag builds and the scheduled nightly build; the nightly sets `VMLOADER_KPHDYN_URL` to the kphtools `nightly` release manifest and publishes the `nightly` prerelease.
   - `thirdparty/systeminformer`: git submodule providing kphlib and CustomBuildTool/CustomSignTool.
 - DriverEntry invariant: load kernel symbols -> install firmware hooks -> install PnP hooks; failure stops later stages and rolls back firmware hooks if PnP registration fails. Unload removes PnP then firmware hooks.
 - Dynamic-data invariant: external dyndata.bin/dyndata.sig is accepted only after embedded public-key signature verification, size limits, exact kernel identity match, required firmware fields, and writable/non-executable/distinct RVA checks; embedded v20 data is fallback.

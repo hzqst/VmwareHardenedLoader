@@ -28,7 +28,7 @@ msbuild VmLoader.sln /m /t:Rebuild /p:Configuration=Debug /p:Platform=x64
 
 在 C/C++ 编译前，项目会自动执行以下步骤：
 
-1. 将最新 manifest 从 https://github.com/HLND2T/kphtools/releases/latest/download/kphdyn.xml 下载到临时文件。
+1. 将最新 manifest 从 https://github.com/HLND2T/kphtools/releases/latest/download/kphdyn.xml 下载到临时文件；若已设置 VMLOADER_KPHDYN_URL 环境变量，则改为从该变量指定的 URL 下载。
 2. 在禁用 DTD 处理的情况下解析 XML，并确认存在可用的固件记录。
 3. 只有验证成功后，才原子替换 thirdparty/systeminformer/kphlib/kphdyn.xml。
 4. 构建 System Informer 的 CustomBuildTool，生成 v20 内嵌源码和 ksidyn.bin。
@@ -36,6 +36,13 @@ msbuild VmLoader.sln /m /t:Rebuild /p:Configuration=Debug /p:Platform=x64
 6. 在中间构建目录下生成驱动公钥头文件。
 
 构建过程不会使用缓存的 manifest。下载、XML 验证、生成、签名或验证任一步失败都会终止构建。
+
+manifest 覆盖值会在下载前按绝对 HTTPS URL 校验，其他取值会终止构建。Nightly 工作流使用该变量针对 kphtools 的 nightly manifest 构建：
+
+~~~bat
+set VMLOADER_KPHDYN_URL=https://github.com/HLND2T/kphtools/releases/download/nightly/kphdyn.xml
+msbuild VmLoader.sln /m /t:Rebuild /p:Configuration=Release /p:Platform=x64
+~~~
 
 构建需要访问 GitHub 的 HTTPS；还原 CustomBuildTool 包时可能需要访问 NuGet。
 
