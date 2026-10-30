@@ -3,7 +3,14 @@
     "basic-memory": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["basic-memory", "mcp", "--project", "VmwareHardenedLoader"],
+      "args": [
+        "--from",
+        "basic-memory[litellm]",
+        "basic-memory",
+        "mcp",
+        "--project",
+        "VmwareHardenedLoader"
+      ],
       "env": {}
     }
   }
